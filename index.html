@@ -1,112 +1,16 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Space EQ</title>
+    <title>Three.js Metaballs</title>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background: black;
-        }
-        canvas {
-            display: block;
-        }
-        button {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 10px 20px;
-            font-size: 16px;
-            background: #ff00ff;
-            color: white;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-            transition: 0.3s;
-        }
-        button:hover {
-            background: #ff0080;
-        }
+        body { margin: 0; overflow: hidden; background-color: black; }
+        canvas { display: block; }
     </style>
 </head>
 <body>
-    <button id="startAudio">Запустить космическую вечеринку 🚀</button>
-    <audio id="audio" src="./dusky.mp3"></audio>
-    <canvas id="canvas"></canvas>
-
-    <script>
-        const audio = document.getElementById("audio");
-        const canvas = document.getElementById("canvas");
-        const ctx = canvas.getContext("2d");
-        const button = document.getElementById("startAudio");
-
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        let audioCtx, analyser, bufferLength, dataArray;
-
-        button.addEventListener("click", () => {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioCtx.createAnalyser();
-                const source = audioCtx.createMediaElementSource(audio);
-                source.connect(analyser);
-                analyser.connect(audioCtx.destination);
-                analyser.fftSize = 512;
-                bufferLength = analyser.frequencyBinCount;
-                dataArray = new Uint8Array(bufferLength);
-            }
-
-            audio.play();
-            draw();
-            button.style.display = "none"; // Скрываем кнопку после старта
-        });
-
-        function draw() {
-            requestAnimationFrame(draw);
-            analyser.getByteFrequencyData(dataArray);
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            const barWidth = (canvas.width / bufferLength) * 2.5;
-            let x = 0;
-
-            for (let i = 0; i < bufferLength; i++) {
-                let height = dataArray[i] * 2; // Реакция на басы
-                let hue = i * 2; // Цвета в стиле неон
-                let glow = height / 4; // Свечение
-
-                ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-                ctx.shadowBlur = glow;
-                ctx.shadowColor = `hsl(${hue}, 100%, 70%)`;
-                ctx.fillRect(x, canvas.height - height, barWidth, height);
-
-                x += barWidth + 2;
-            }
-
-            drawStars();
-        }
-
-        function drawStars() {
-            for (let i = 0; i < 10; i++) {
-                let x = Math.random() * canvas.width;
-                let y = Math.random() * canvas.height;
-                let size = Math.random() * 3;
-                let brightness = Math.random() * 100;
-                ctx.fillStyle = `hsl(200, 100%, ${brightness}%)`;
-                ctx.fillRect(x, y, size, size);
-            }
-        }
-
-        window.addEventListener("resize", () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
-    </script>
+    <h1 style="color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">Привет, это мой сайт с живым фоном!</h1>
+    <script type="module" src="script.js"></script>
 </body>
 </html>

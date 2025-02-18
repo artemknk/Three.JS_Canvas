@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Visualizer - Optimized Epic Mode</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <audio id="audio" controls>
+        <source src="./dusky.mp3" type="audio/mpeg">
+    </audio>
+    <canvas id="canvas"></canvas>
+    <script>
+        const audio = document.getElementById('audio');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const analyser = audioCtx.createAnalyser();
+        const source = audioCtx.createMediaElementSource(audio);
+        source.connect(analyser);
+        analyser.connect(audioCtx.destination);
+        analyser.fftSize = 128;
+        
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        let particles = [];
+        let centerAngle = 2;
+        let centerRadius = 1;
+        let centerSpeed = 0.005;
+        const maxParticles = 1000; // Ограничение числа частиц
+
+        class Particle {
+            constructor(angle, radius, speed, size, hue) {
+                this.angle = angle;
+                this.radius = radius;
+                this.speed = speed;
+                this.size = size;
+                this.hue = hue;
+            }
+
+            update() {
+                this.radius += this.speed * 3;
+                this.angle += 0.1;
+                this.size *= 1 + Math.sin(this.angle) * 0.03;
+                this.hue = (this.hue + Math.random() * 10) % 360;
+            }
+
+            draw() {
+                const centerX = canvas.width / 2 + Math.cos(centerAngle) * centerRadius;
+                const centerY = canvas.height / 2 + Math.sin(centerAngle) * centerRadius;
+                const x = centerX + Math.cos(this.angle) * this.radius;
+                const y = centerY + Math.sin(this.angle) * this.radius;
+
+                ctx.fillStyle = `hsl(${this.hue}, 100%, 60%)`;
+                ctx.beginPath();
+                ctx.arc(x, y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function createParticles() {
+            for (let i = 0; i < bufferLength; i++) {
+                let value = dataArray[i];
+                if (value > 140 && particles.length < maxParticles) {
+                    let angle = (i / bufferLength) * Math.PI * 2;
+                    let radius = 80;
+                    let speed = Math.random() * 3 + 1;
+                    let size = Math.random() * 4 + 2;
+                    let hue = (i * 6) % 360;
+
+                    particles.push(new Particle(angle, radius, speed, size, hue));
+                }
+            }
+        }
+
+        function draw() {
+            requestAnimationFrame(draw);
+            analyser.getByteFrequencyData(dataArray);
+
+            ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            createParticles();
+
+            particles.forEach((p, index) => {
+                p.update();
+                p.draw();
+                if (p.size < 0.5 || p.radius > canvas.width * 1.2) {
+                    particles.splice(index, 1);
+                }
+            });
+
+            centerAngle += centerSpeed;
+            centerRadius = Math.sin(centerAngle) * 40 + 60;
+        }
+
+        audio.addEventListener('play', () => {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            draw();
+        });
+    </script>
+</body>
+</html>
