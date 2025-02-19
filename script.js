@@ -10,13 +10,7 @@ camera.position.z = 1;
 // 3. Рендерер
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-// Делаем рендер через `position: fixed`, чтобы он был фоном
-renderer.domElement.style.position = "fixed";
-renderer.domElement.style.top = "0";
-renderer.domElement.style.left = "0";
-renderer.domElement.style.width = "100vw";
-renderer.domElement.style.height = "100vh";
-renderer.domElement.style.zIndex = "-1";
+renderer.domElement.classList.add('canvas-background');
 document.body.appendChild(renderer.domElement);
 
 // 4. Шейдерный материал (метаболлы)
@@ -24,6 +18,7 @@ const metaballMaterial = new THREE.ShaderMaterial({
     uniforms: {
         u_time: { value: 0 },
         u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+        u_mouse: { value: new THREE.Vector2(-1, 1) }, // Новая переменная для позиции мыши
     },
     vertexShader: `
         varying vec2 vUv;
@@ -36,6 +31,7 @@ const metaballMaterial = new THREE.ShaderMaterial({
         precision mediump float;
         uniform float u_time;
         uniform vec2 u_resolution;
+        uniform vec2 u_mouse; // Новая переменная для позиции мыши
         varying vec2 vUv;
 
         // Функция метаболлов (капель)
@@ -50,13 +46,16 @@ const metaballMaterial = new THREE.ShaderMaterial({
 
             // Генерируем капли (уменьшенные радиусы)
             float field = 0.0;
-            field += metaball(uv, vec2(sin(u_time * 0.1) * 0.6, cos(u_time * 0.1) * 0.6), 0.1);
-            field += metaball(uv, vec2(sin(u_time * 0.1 + 1.0) * 0.7, cos(u_time * 0.2 + 1.0) * 0.7), 0.09);
-            field += metaball(uv, vec2(sin(u_time * 0.1 + 2.0) * 0.5, cos(u_time * 0.3 + 2.0) * 0.5), 0.04);
-            field += metaball(uv, vec2(sin(u_time * 0.1 + 3.0) * 0.8, cos(u_time * 0.5 + 3.0) * 0.8), 0.03);
-            field += metaball(uv, vec2(sin(u_time * 0.1 + 4.0) * 0.6, cos(u_time * 0.4 + 4.0) * 0.6), 0.08);
-            field += metaball(uv, vec2(sin(u_time * 0.1 + 5.0) * 0.5, cos(u_time * 0.6 + 5.0) * 0.5), 0.035);
-            field += metaball(uv, vec2(sin(u_time * 0.1 + 6.0) * 0.7, cos(u_time * 0.8 + 6.0) * 0.7), 0.03);
+            field += metaball(uv, vec2(sin(u_time * 0.1) * 0.6, cos(u_time * 0.1) * 0.6), 0.04);
+            field += metaball(uv, vec2(sin(u_time * 0.1 + 1.0) * 0.7, cos(u_time * 0.2 + 1.0) * 0.7), 0.04);
+            field += metaball(uv, vec2(sin(u_time * 0.1 + 2.0) * 0.5, cos(u_time * 0.3 + 2.0) * 0.5), 0.05);
+            field += metaball(uv, vec2(sin(u_time * 0.1 + 3.0) * 0.8, cos(u_time * 0.5 + 3.0) * 0.8), 0.05);
+            field += metaball(uv, vec2(sin(u_time * 0.1 + 4.0) * 0.6, cos(u_time * 0.4 + 4.0) * 0.6), 0.05);
+            field += metaball(uv, vec2(sin(u_time * 0.1 + 5.0) * 0.5, cos(u_time * 0.6 + 5.0) * 0.5), 0.05);
+            field += metaball(uv, vec2(sin(u_time * 0.1 + 6.0) * 0.7, cos(u_time * 0.8 + 6.0) * 0.7), 0.05);
+
+            // Добавляем каплю, управляемую мышью
+            field += metaball(uv, u_mouse, 0.03); // Капля, которая следует за курсором
 
             // Еще немного увеличим порог слияния для разделения капель
             float alpha = smoothstep(0.6, 0.6, field);
@@ -85,10 +84,20 @@ function animate() {
 }
 
 animate();
+// Переменная для хранения позиции мыши
+const mousePosition = new THREE.Vector2();
 
+// Обработчик движения мыши
+window.addEventListener('mousemove', (event) => {
+    // Преобразуем координаты мыши в нормализованные координаты (-1 до 1)
+    mousePosition.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mousePosition.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    // Обновляем uniform-переменную в шейдере
+    metaballMaterial.uniforms.u_mouse.value = mousePosition;
+});
 // 7. Обновление экрана при изменении размеров
 window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     metaballMaterial.uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight);
 });
-
