@@ -16,7 +16,7 @@ renderer.domElement.style.top = "0";
 renderer.domElement.style.left = "0";
 renderer.domElement.style.width = "100vw";
 renderer.domElement.style.height = "100vh";
-renderer.domElement.style.zIndex = "-1"; // У
+renderer.domElement.style.zIndex = "-1";
 document.body.appendChild(renderer.domElement);
 
 // 4. Шейдерный материал (метаболлы)
