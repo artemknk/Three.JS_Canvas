@@ -11,6 +11,7 @@ camera.position.z = 1;
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.domElement.classList.add('canvas-background');
+renderer.setClearColor(0x060d39, 1);
 document.body.appendChild(renderer.domElement);
 
 // 4. Шейдерный материал (метаболлы)
@@ -61,9 +62,9 @@ const metaballMaterial = new THREE.ShaderMaterial({
             float alpha = smoothstep(0.6, 0.6, field);
 
             // Розово-фиолетовый градиент
-            vec3 color1 = vec3(1.0, 0.3, 0.7);
-            vec3 color2 = vec3(0.5, 0.2, 1.0);
-            vec3 color = mix(color1, color2, smoothstep(0.3, 0.7, field));
+            vec3 color1 = vec3(0.9, 0.1, 0.6);
+            vec3 color2 = vec3(0.9, 0.1, 0.9);
+            vec3 color = mix(color1, color2, smoothstep(0.4, 0.8, field));
 
             gl_FragColor = vec4(color, alpha);
         }
