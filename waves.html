@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Волшебный арт-холст</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            touch-action: manipulation;
+            font-family: Arial;
+        }
+        canvas {
+            display: block;
+        }
+        .ui {
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="ui">Кликайте/тапайте • Двойной клик — сменить фон • Удерживайте — чёрная дыра</div>
+
+    <script>
+        // Настройки
+        const config = {
+            particleCount: 30,
+            waveSpeed: 2,
+            blackHolePower: 0.05
+        };
+
+        // Инициализация
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Системы
+        const waves = [];
+        const particles = [];
+        let isDarkMode = true;
+        let blackHole = null;
+        let audioCtx;
+
+        // Цветовая палитра
+        function getColor(x, y) {
+            const hue = (x / canvas.width) * 360;
+            const sat = 70 + (y / canvas.height) * 30;
+            return `hsla(${hue}, ${sat}%, 60%, 0.7)`;
+        }
+
+        // Создание волны
+        function createWave(x, y) {
+            const color = getColor(x, y);
+            
+            // Основная волна
+            waves.push({
+                x, y, radius: 5, alpha: 1, color,
+                speed: config.waveSpeed + Math.random()
+            });
+
+            // Рябь вокруг
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    waves.push({
+                        x: x + Math.random() * 30 - 15,
+                        y: y + Math.random() * 30 - 15,
+                        radius: 2, alpha: 0.4, color,
+                        speed: config.waveSpeed * 0.7
+                    });
+                }, i * 150);
+            }
+
+            // Звук
+            playSound(y);
+        }
+
+        // Создание частиц
+        function createParticles(x, y, count = config.particleCount) {
+            const color = getColor(x, y);
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x, y,
+                    size: Math.random() * 4 + 1,
+                    speedX: Math.random() * 6 - 3,
+                    speedY: Math.random() * 6 - 3,
+                    alpha: 1,
+                    color
+                });
+            }
+        }
+
+        // Генерация звука
+        function playSound(y) {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const notes = [261.63, 329.63, 392.00, 523.25]; // До, Ми, Соль, До2
+            const note = notes[Math.floor((y / canvas.height) * notes.length)];
+            
+            const osc = audioCtx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.value = note;
+            
+            const gain = audioCtx.createGain();
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+            
+            osc.connect(gain).connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        // Физика частиц
+        function updateParticles() {
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                
+                // Гравитация к курсору/чёрной дыре
+                if (blackHole) {
+                    p.speedX += (blackHole.x - p.x) * config.blackHolePower;
+                    p.speedY += (blackHole.y - p.y) * config.blackHolePower;
+                }
+                
+                // Движение
+                p.x += p.speedX;
+                p.y += p.speedY;
+                p.alpha -= 0.01;
+                
+                // Удаление "мёртвых" частиц
+                if (p.alpha <= 0 || p.size <= 0) {
+                    particles.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+
+        // Отрисовка волн
+        function drawWaves() {
+            for (let i = 0; i < waves.length; i++) {
+                const w = waves[i];
+                w.radius += w.speed;
+                w.alpha -= 0.008;
+                
+                // Неровные края
+                ctx.beginPath();
+                for (let angle = 0; angle < Math.PI * 2; angle += 0.2) {
+                    const ripple = Math.sin(angle * 5 + Date.now() * 0.005) * 5;
+                    const x = w.x + Math.cos(angle) * (w.radius + ripple);
+                    const y = w.y + Math.sin(angle) * (w.radius + ripple);
+                    ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.strokeStyle = w.color.replace('0.7', w.alpha.toFixed(2));
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Удаление исчезнувших волн
+                if (w.alpha <= 0) {
+                    waves.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+
+        // Отрисовка частиц
+        function drawParticles() {
+            for (const p of particles) {
+                ctx.fillStyle = p.color.replace('0.7', p.alpha.toFixed(2));
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Чёрная дыра
+        function drawBlackHole() {
+            if (!blackHole) return;
+            
+            ctx.fillStyle = `rgba(0, 0, 0, 0.2)`;
+            ctx.beginPath();
+            ctx.arc(blackHole.x, blackHole.y, 40, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = `rgba(255, 255, 255, 0.7)`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(blackHole.x, blackHole.y, 60, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // Основной цикл
+        function animate() {
+            // Полупрозрачный фон для эффекта шлейфа
+            ctx.fillStyle = isDarkMode ? 'rgba(0, 0, 0, 0.05)' : 'rgba(240, 240, 240, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            updateParticles();
+            drawWaves();
+            drawParticles();
+            drawBlackHole();
+            
+            requestAnimationFrame(animate);
+        }
+
+        // Обработчики событий
+        canvas.addEventListener('click', (e) => {
+            createWave(e.clientX, e.clientY);
+            createParticles(e.clientX, e.clientY);
+        });
+
+        canvas.addEventListener('dblclick', () => {
+            isDarkMode = !isDarkMode;
+            document.body.style.background = isDarkMode ? '#000' : '#f0f0f0';
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            blackHole = { x: e.clientX, y: e.clientY };
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            blackHole = null;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (blackHole) {
+                blackHole.x = e.clientX;
+                blackHole.y = e.clientY;
+            }
+        });
+
+        // Запуск
+        animate();
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>

@@ -18,3 +18,19 @@
   font-size: 30px;
   color: white;
 }
+.links-block {
+  position: fixed;
+  margin: 10px;
+  padding: 10px;
+  border-radius: 15px;
+  margin: 0 auto;
+  width: 300px;
+  height: 100px;;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(15.1px);
+  -webkit-backdrop-filter: blur(15.1px);
+  border: 1px solid rgba(255, 255, 255, 0.44);
+}
